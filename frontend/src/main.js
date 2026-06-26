@@ -16,6 +16,8 @@ import {
   renderErrorState,
   renderEmptyState,
 } from './components/Loader.js';
+import { renderPunjabMap, updateMapColors } from './components/PunjabMap.js';
+import { initDistrictPanel, openDistrictPanel, closeDistrictPanel } from './components/DistrictPanel.js';
 
 // ═══════════════════════════════════════════════
 // Application State
@@ -35,6 +37,7 @@ const state = {
   hasMore: false,
   totalStories: 0,
   filterMeta: null,
+  activeView: 'feed',
 };
 
 // ═══════════════════════════════════════════════
@@ -55,7 +58,7 @@ async function init() {
   app.innerHTML = '';
 
   // Build the app shell
-  renderHeader(app);
+  renderHeader(app, { total: state.totalStories }, handleViewChange);
   $('#headerRefreshBtn')?.addEventListener('click', handleManualRefresh);
   renderSearchBar(app, handleSearch);
   renderFilterBar(app, handleFilterChange);
@@ -65,6 +68,14 @@ async function init() {
   feedContainer.className = 'feed-container';
   feedContainer.id = 'feedContainer';
   app.appendChild(feedContainer);
+
+  // Render the map and hide by default
+  renderPunjabMap(app, state.stories, handleDistrictClick);
+  const mapSec = $('#mapSection');
+  if (mapSec) mapSec.style.display = 'none';
+
+  // Initialize district panel
+  initDistrictPanel(app);
 
   // Initialize modal
   initModal(app);
@@ -78,8 +89,6 @@ async function init() {
       fetchFeed(state.filters),
       fetchFilters().catch(() => null),
     ]);
-
-
 
     // Process feed data
     handleFeedData(feedData);
@@ -96,8 +105,6 @@ async function init() {
     }
   } catch (err) {
     console.error('[Init] Failed to load:', err);
-
-
 
     removeSkeletonCards();
     renderErrorState(feedContainer, err.message, () => {
@@ -125,6 +132,7 @@ function handleFeedData(data) {
 
   updateHeaderStats(state.totalStories);
   renderFeed(state.stories);
+  updateMapColors(state.stories);
 }
 
 // ═══════════════════════════════════════════════
@@ -206,6 +214,7 @@ async function handleSearch(query) {
     updateSearchResultsCount(state.totalStories);
     updateHeaderStats(state.totalStories);
     renderFeed(state.stories);
+    updateMapColors(state.stories);
   } catch (err) {
     removeSkeletonCards();
     renderErrorState(feedContainer, err.message, () => handleSearch(query));
@@ -345,6 +354,34 @@ async function handleManualRefresh() {
     refreshBtn.classList.remove('loading');
     refreshBtn.disabled = false;
   }
+}
+
+function handleViewChange(view) {
+  state.activeView = view;
+  const searchContainer = $('.search-container');
+  const filterContainer = $('.filter-container');
+  const feedContainer = $('#feedContainer');
+  const mapSection = $('#mapSection');
+
+  if (view === 'feed') {
+    if (searchContainer) searchContainer.style.display = '';
+    if (filterContainer) filterContainer.style.display = '';
+    if (feedContainer) feedContainer.style.display = '';
+    if (mapSection) mapSection.style.display = 'none';
+    closeDistrictPanel();
+  } else if (view === 'map') {
+    if (searchContainer) searchContainer.style.display = 'none';
+    if (filterContainer) filterContainer.style.display = 'none';
+    if (feedContainer) feedContainer.style.display = 'none';
+    if (mapSection) mapSection.style.display = '';
+    
+    // Update map colors with current stories
+    updateMapColors(state.stories);
+  }
+}
+
+function handleDistrictClick(district, districtStories) {
+  openDistrictPanel(district, districtStories);
 }
 
 // ═══════════════════════════════════════════════

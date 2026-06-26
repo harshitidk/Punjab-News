@@ -17,3 +17,4 @@ create table if not exists articles (
 
 -- Index for chronological feed retrieval
 create index if not exists idx_articles_published_at on articles (published_at desc);
+
