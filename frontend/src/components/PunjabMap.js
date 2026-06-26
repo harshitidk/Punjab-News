@@ -79,10 +79,13 @@ function getHeatColor(count, maxCount) {
   return `rgba(${r}, ${g}, ${b}, ${0.25 + intensity * 0.55})`;
 }
 
+let currentStories = [];
+
 /**
  * Render the Punjab Map section
  */
 export function renderPunjabMap(container, stories = [], onDistrictClick) {
+  currentStories = stories;
   const districtMap = mapStoriesToDistricts(stories);
   const maxCount = getMaxStoryCount(districtMap);
 
@@ -195,7 +198,8 @@ export function renderPunjabMap(container, stories = [], onDistrictClick) {
 
     // Click handler
     g.addEventListener('click', () => {
-      const districtStories = districtMap.get(district.id) || [];
+      const latestMap = mapStoriesToDistricts(currentStories);
+      const districtStories = latestMap.get(district.id) || [];
       onDistrictClick(district, districtStories);
     });
 
@@ -213,9 +217,28 @@ export function renderPunjabMap(container, stories = [], onDistrictClick) {
   mapSection.appendChild(mapContainer);
 
   // Stats bar
-  const statsBar = createElement('div', { className: 'map-stats-bar' });
+  const statsBar = createElement('div', { className: 'map-stats-bar', id: 'mapStatsBar' });
+  mapSection.appendChild(statsBar);
+  updateStatsBar(districtMap);
+
+  container.appendChild(mapSection);
+
+  // Set up hover tooltip
+  setupTooltip(mapContainer);
+
+  return mapSection;
+}
+
+/**
+ * Update stats bar content
+ */
+function updateStatsBar(districtMap) {
+  const statsBar = document.getElementById('mapStatsBar');
+  if (!statsBar) return;
+
   const totalMapped = [...districtMap.values()].reduce((sum, arr) => sum + arr.length, 0);
   const districtsWithNews = [...districtMap.values()].filter(arr => arr.length > 0).length;
+
   statsBar.innerHTML = `
     <div class="map-stat">
       <span class="map-stat-value">${districtsWithNews}</span>
@@ -230,20 +253,12 @@ export function renderPunjabMap(container, stories = [], onDistrictClick) {
       <span class="map-stat-label">Districts without coverage</span>
     </div>
   `;
-  mapSection.appendChild(statsBar);
-
-  container.appendChild(mapSection);
-
-  // Set up hover tooltip
-  setupTooltip(mapContainer, districtMap);
-
-  return mapSection;
 }
 
 /**
  * Set up hover tooltip for districts
  */
-function setupTooltip(mapContainer, districtMap) {
+function setupTooltip(mapContainer) {
   const tooltip = mapContainer.querySelector('#mapTooltip');
   const svg = mapContainer.querySelector('#punjabMapSvg');
 
@@ -256,7 +271,10 @@ function setupTooltip(mapContainer, districtMap) {
 
     const districtId = districtGroup.dataset.district;
     const district = DISTRICTS.find(d => d.id === districtId);
-    const count = districtMap.get(districtId)?.length || 0;
+    
+    // Get latest story count dynamically
+    const latestMap = mapStoriesToDistricts(currentStories);
+    const count = latestMap.get(districtId)?.length || 0;
 
     tooltip.innerHTML = `
       <div class="tooltip-name">${district?.name || districtId}</div>
@@ -279,9 +297,10 @@ function setupTooltip(mapContainer, districtMap) {
 }
 
 /**
- * Update map colors when stories change
+ * Update map colors and dynamically update layout / stats / tags when stories change
  */
 export function updateMapColors(stories) {
+  currentStories = stories;
   const districtMap = mapStoriesToDistricts(stories);
   const maxCount = getMaxStoryCount(districtMap);
 
@@ -291,5 +310,44 @@ export function updateMapColors(stories) {
 
     const count = districtMap.get(district.id)?.length || 0;
     path.setAttribute('fill', getHeatColor(count, maxCount));
+    
+    if (count > 0) {
+      path.setAttribute('filter', 'url(#districtGlow)');
+    } else {
+      path.removeAttribute('filter');
+    }
+
+    // Update parent group classes & datasets
+    const g = path.parentNode;
+    if (g) {
+      g.setAttribute('class', `district-group ${count > 0 ? 'has-stories' : 'no-stories'}`);
+      g.setAttribute('data-count', count);
+
+      // Update or add/remove story count badge text element
+      let badge = g.querySelector('.district-count');
+      if (count > 0) {
+        if (!badge) {
+          const svgNS = 'http://www.w3.org/2000/svg';
+          badge = document.createElementNS(svgNS, 'text');
+          const labelPos = LABEL_POSITIONS[district.id];
+          if (labelPos) {
+            badge.setAttribute('x', labelPos.x);
+            badge.setAttribute('y', labelPos.y + 14);
+            badge.setAttribute('class', 'district-count');
+            badge.setAttribute('text-anchor', 'middle');
+            badge.setAttribute('dominant-baseline', 'middle');
+            g.appendChild(badge);
+          }
+        }
+        if (badge) {
+          badge.textContent = `${count} ${count === 1 ? 'story' : 'stories'}`;
+        }
+      } else if (badge) {
+        badge.remove();
+      }
+    }
   }
+
+  // Update bottom stats bar
+  updateStatsBar(districtMap);
 }
