@@ -1,43 +1,66 @@
 /**
  * News API route handlers.
  * Provides endpoints for feed, story details, search, and filters.
+ *
+ * Architecture (optimized for serverless):
+ * - /feed reads from Supabase DB (fast, ~200ms)
+ * - /refresh fetches from external APIs and saves to DB (slow, called by cron/manual)
  */
 
 import { Router } from 'express';
 import { fetchAllPunjabNews } from '../services/newsApi.js';
 import { filterArticles } from '../services/keywordFilter.js';
 import { deduplicateArticles } from '../services/deduplicator.js';
+import { getArticlesFromDb } from '../services/db.js';
 import { CATEGORIES } from '../config/keywords.js';
 import cache from '../services/cache.js';
 
 const router = Router();
 
 /**
- * Process raw articles through the full pipeline:
- * Fetch → Filter → Deduplicate → Cache
+ * Get processed stories — fast path for /feed.
+ * Reads from Supabase DB (fast), only calls external APIs as last resort.
  */
 export async function getProcessedStories() {
   const cacheKey = 'processed_stories';
   const cached = cache.get(cacheKey);
   if (cached) return cached;
 
-  // Step 1: Fetch from NewsAPI
-  const { articles } = await fetchAllPunjabNews();
+  let articles = [];
 
-  // Step 2: Filter by relevance
+  // Step 1: Try loading from Supabase DB (fast, ~200ms)
+  try {
+    const dbArticles = await getArticlesFromDb(150);
+    if (dbArticles && dbArticles.length > 0) {
+      console.log(`[Feed] Loaded ${dbArticles.length} articles from Supabase DB`);
+      articles = dbArticles;
+    }
+  } catch (err) {
+    console.error('[Feed] Failed to load from DB:', err.message);
+  }
+
+  // Step 2: If DB is empty, fetch from external APIs as fallback
+  if (articles.length === 0) {
+    console.log('[Feed] DB empty, fetching from external APIs...');
+    const result = await fetchAllPunjabNews();
+    articles = result.articles || [];
+  }
+
+  // Step 3: Filter by relevance
   const filtered = filterArticles(articles);
 
-  // Step 3: Deduplicate into stories
+  // Step 4: Deduplicate into stories
   const stories = deduplicateArticles(filtered);
 
-  // Cache processed stories for 30 minutes
+  // Cache processed stories for 30 minutes (helps locally, not on serverless)
   cache.set(cacheKey, stories, 30 * 60 * 1000);
 
   return stories;
 }
 
 /**
- * Pre-warm/Force fetch the news cache
+ * Pre-warm: Force fetch from external APIs, save to DB.
+ * Called by /refresh endpoint and cron job.
  */
 export async function preWarmCache() {
   console.log(`[Scheduler] Starting scheduled news fetch at ${new Date().toISOString()}...`);
@@ -45,9 +68,10 @@ export async function preWarmCache() {
     // Clear cache keys to force a fresh fetch
     cache.delete('processed_stories');
     cache.delete('punjab_news__');
+    cache.delete('raw_articles');
     
-    // Fetch and process stories
-    await getProcessedStories();
+    // Fetch from external APIs (this saves to Supabase automatically)
+    await fetchAllPunjabNews();
     console.log('[Scheduler] News feed pre-warmed successfully.');
   } catch (err) {
     console.error('[Scheduler] Error pre-warming news feed:', err.message);
