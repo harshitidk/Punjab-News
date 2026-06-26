@@ -14,6 +14,8 @@ frontend/dist/
 backend/.env
 frontend/.env
 *.env
+package-lock.json
+**/package-lock.json
 
 # OS Files
 .DS_Store
