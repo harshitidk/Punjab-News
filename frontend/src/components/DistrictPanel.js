@@ -55,6 +55,7 @@ export function openDistrictPanel(district, stories) {
           ${icons.close}
         </button>
       </div>
+      ${district.isRegion ? `<div class="district-panel-region-subtitle" style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 6px; font-weight: var(--weight-normal); line-height: 1.4;">Districts: ${escapeHtml(district.districtsList)}</div>` : ''}
     </div>
     <div class="district-panel-body">
       ${hasStories ? activeStories.map(story => renderCompactCard(story)).join('') : renderNoStories(district.name)}

@@ -1194,6 +1194,11 @@
   }
 }
 
+.map-title-left {
+  display: flex;
+  flex-direction: column;
+}
+
 .map-title {
   display: flex;
   align-items: center;
@@ -1216,6 +1221,63 @@
   margin-top: var(--space-1);
 }
 
+.map-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-top: var(--space-2);
+}
+
+@media (min-width: 768px) {
+  .map-controls {
+    margin-top: 0;
+  }
+}
+
+.map-mode-toggle {
+  display: flex;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 4px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+}
+
+.map-toggle-btn {
+  background: transparent;
+  border: none;
+  padding: var(--space-2) var(--space-4);
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--text-secondary);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast) ease;
+}
+
+.map-toggle-btn:hover {
+  color: var(--text-primary);
+}
+
+.map-toggle-btn.active {
+  background: var(--accent-saffron);
+  color: var(--text-primary);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
+}
+
+.map-legend-row {
+  margin-top: var(--space-4);
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .map-legend-row {
+    justify-content: flex-start;
+  }
+}
+
 .map-legend {
   display: flex;
   align-items: center;
@@ -1236,6 +1298,73 @@
   height: 8px;
   border-radius: var(--radius-full);
   background: linear-gradient(90deg, rgba(255, 255, 255, 0.04), rgba(245, 158, 11, 0.8));
+}
+
+.map-regions-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: center;
+}
+
+.region-legend-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  background: var(--bg-glass);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  transition: all var(--transition-normal) ease;
+  color: var(--text-secondary);
+}
+
+.region-legend-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--region-color);
+  color: var(--text-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.region-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--region-color);
+  box-shadow: 0 0 8px var(--region-color);
+}
+
+.region-legend-name {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+}
+
+.region-legend-count {
+  font-size: var(--text-xxs);
+  color: var(--text-muted);
+}
+
+/* Region highlights for map polygons */
+#punjabMapSvg.highlight-majha .district-group:not(.region-majha) {
+  opacity: 0.12 !important;
+  filter: grayscale(0.8) blur(0.5px);
+}
+
+#punjabMapSvg.highlight-doaba .district-group:not(.region-doaba) {
+  opacity: 0.12 !important;
+  filter: grayscale(0.8) blur(0.5px);
+}
+
+#punjabMapSvg.highlight-malwa .district-group:not(.region-malwa) {
+  opacity: 0.12 !important;
+  filter: grayscale(0.8) blur(0.5px);
+}
+
+/* Transition for district groups when highlighting */
+.district-group {
+  transition: opacity 0.3s ease, filter 0.3s ease, transform 0.2s ease;
 }
 
 .map-container {
