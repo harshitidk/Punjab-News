@@ -7,64 +7,8 @@
 import { createElement } from '../utils/dom.js';
 import { DISTRICTS, mapStoriesToDistricts, getMaxStoryCount } from '../data/districts.js';
 
-/**
- * SVG path data for each district (simplified boundaries, correct relative positions)
- * ViewBox: 0 0 500 720
- */
-const DISTRICT_PATHS = {
-  'pathankot':       'M 245,5 L 290,5 320,20 335,55 310,85 265,90 230,75 225,40 Z',
-  'gurdaspur':       'M 135,55 L 225,40 230,75 265,90 310,85 290,145 250,190 195,195 140,175 100,140 105,95 Z',
-  'hoshiarpur':      'M 310,85 L 335,55 380,35 430,40 460,70 465,130 450,195 410,240 360,240 305,215 280,175 290,145 Z',
-  'amritsar':        'M 30,145 L 100,140 140,175 195,195 190,240 170,280 120,305 60,300 25,265 15,210 Z',
-  'tarn-taran':      'M 15,305 L 60,300 120,305 130,345 110,385 60,395 20,375 10,340 Z',
-  'kapurthala':      'M 170,280 L 190,240 195,195 250,190 265,225 255,270 220,295 185,305 Z',
-  'jalandhar':       'M 250,190 L 305,215 360,240 350,275 320,300 270,300 255,270 265,225 Z',
-  'nawanshahr':      'M 360,240 L 410,240 440,260 445,305 415,330 370,320 335,300 350,275 Z',
-  'rupnagar':        'M 415,330 L 445,305 475,310 490,350 480,400 445,415 410,395 390,360 Z',
-  'ferozepur':       'M 5,375 L 20,375 60,395 80,430 75,480 55,510 20,520 5,490 Z',
-  'moga':            'M 60,395 L 110,385 160,390 185,420 175,465 140,485 90,480 75,480 80,430 Z',
-  'ludhiana':        'M 185,305 L 220,295 255,270 270,300 320,300 335,300 370,320 375,360 350,400 300,415 250,410 210,390 185,365 Z',
-  'fatehgarh-sahib': 'M 370,320 L 390,360 410,395 400,430 365,440 335,420 350,400 375,360 Z',
-  'mohali':          'M 410,395 L 445,415 470,440 465,490 430,510 395,485 375,450 400,430 Z',
-  'fazilka':         'M 5,520 L 20,520 55,510 70,550 60,600 40,630 15,630 5,590 Z',
-  'faridkot':        'M 55,510 L 75,480 90,480 130,490 135,530 115,560 70,555 Z',
-  'muktsar':         'M 70,555 L 115,560 135,530 155,555 150,600 115,630 70,630 55,610 60,600 70,550 Z',
-  'barnala':         'M 175,465 L 210,455 250,410 260,445 240,480 200,490 Z',
-  'malerkotla':      'M 250,410 L 300,415 310,440 285,465 260,445 Z',
-  'sangrur':         'M 200,490 L 240,480 260,445 285,465 310,440 335,420 365,440 360,480 330,520 280,535 235,530 210,510 Z',
-  'bathinda':        'M 115,630 L 150,600 155,555 190,545 230,560 230,610 200,650 155,665 120,660 Z',
-  'mansa':           'M 230,560 L 280,535 330,520 345,555 335,600 295,625 250,630 230,610 Z',
-  'patiala':         'M 330,520 L 360,480 365,440 400,430 375,450 395,485 430,510 440,555 420,600 380,630 340,630 335,600 345,555 Z',
-};
+import { DISTRICT_PATHS, LABEL_POSITIONS } from '../data/map_paths.js';
 
-/**
- * Label positions for each district (x, y coordinates for text placement)
- */
-const LABEL_POSITIONS = {
-  'pathankot':       { x: 275, y: 48 },
-  'gurdaspur':       { x: 195, y: 130 },
-  'hoshiarpur':      { x: 385, y: 155 },
-  'amritsar':        { x: 100, y: 225 },
-  'tarn-taran':      { x: 70, y: 350 },
-  'kapurthala':      { x: 215, y: 250 },
-  'jalandhar':       { x: 300, y: 250 },
-  'nawanshahr':      { x: 400, y: 285 },
-  'rupnagar':        { x: 450, y: 370 },
-  'ferozepur':       { x: 40, y: 450 },
-  'moga':            { x: 125, y: 440 },
-  'ludhiana':        { x: 280, y: 355 },
-  'fatehgarh-sahib': { x: 375, y: 400 },
-  'mohali':          { x: 430, y: 460 },
-  'fazilka':         { x: 35, y: 575 },
-  'faridkot':        { x: 95, y: 525 },
-  'muktsar':         { x: 105, y: 595 },
-  'barnala':         { x: 220, y: 475 },
-  'malerkotla':      { x: 280, y: 445 },
-  'sangrur':         { x: 280, y: 505 },
-  'bathinda':        { x: 170, y: 625 },
-  'mansa':           { x: 290, y: 575 },
-  'patiala':         { x: 385, y: 545 },
-};
 
 /**
  * Get heat map color based on story count
@@ -117,7 +61,7 @@ export function renderPunjabMap(container, stories = [], onDistrictClick) {
 
   const svgNS = 'http://www.w3.org/2000/svg';
   const svg = document.createElementNS(svgNS, 'svg');
-  svg.setAttribute('viewBox', '0 0 500 720');
+  svg.setAttribute('viewBox', '0 0 600 700');
   svg.setAttribute('class', 'punjab-map-svg');
   svg.setAttribute('id', 'punjabMapSvg');
 
