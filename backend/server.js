@@ -45,18 +45,22 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal server error', message: err.message });
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`\n🟢 Punjab News Feed API running on http://localhost:${PORT}`);
-  console.log(`   Feed:    http://localhost:${PORT}/api/news/feed`);
-  console.log(`   Search:  http://localhost:${PORT}/api/news/search?q=bhagwant+mann`);
-  console.log(`   Filters: http://localhost:${PORT}/api/news/filters`);
-  console.log(`   Health:  http://localhost:${PORT}/api/health\n`);
+// Start server (only if not on Vercel)
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`\n🟢 Punjab News Feed API running on http://localhost:${PORT}`);
+    console.log(`   Feed:    http://localhost:${PORT}/api/news/feed`);
+    console.log(`   Search:  http://localhost:${PORT}/api/news/search?q=bhagwant+mann`);
+    console.log(`   Filters: http://localhost:${PORT}/api/news/filters`);
+    console.log(`   Health:  http://localhost:${PORT}/api/health\n`);
 
-  // Pre-warm the cache immediately
-  preWarmCache();
+    // Pre-warm the cache immediately
+    preWarmCache();
 
-  // Schedule to fetch news every 30 minutes
-  const INTERVAL_30_MIN = 30 * 60 * 1000;
-  setInterval(preWarmCache, INTERVAL_30_MIN);
-});
+    // Schedule to fetch news every 30 minutes
+    const INTERVAL_30_MIN = 30 * 60 * 1000;
+    setInterval(preWarmCache, INTERVAL_30_MIN);
+  });
+}
+
+export default app;

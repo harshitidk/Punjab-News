@@ -290,17 +290,27 @@ router.get('/filters', async (req, res) => {
 });
 
 /**
- * POST /api/news/refresh
+ * POST/GET /api/news/refresh
  * Clears cache and triggers a manual refresh of the news feed
  */
-router.post('/refresh', async (req, res) => {
-  try {
-    await preWarmCache();
-    res.json({ success: true });
-  } catch (err) {
-    console.error('[Refresh] Error:', err.message);
-    res.status(500).json({ error: 'Failed to refresh news feed', details: err.message });
-  }
-});
+router.route('/refresh')
+  .get(async (req, res) => {
+    try {
+      await preWarmCache();
+      res.json({ success: true });
+    } catch (err) {
+      console.error('[Refresh] Error:', err.message);
+      res.status(500).json({ error: 'Failed to refresh news feed', details: err.message });
+    }
+  })
+  .post(async (req, res) => {
+    try {
+      await preWarmCache();
+      res.json({ success: true });
+    } catch (err) {
+      console.error('[Refresh] Error:', err.message);
+      res.status(500).json({ error: 'Failed to refresh news feed', details: err.message });
+    }
+  });
 
 export default router;

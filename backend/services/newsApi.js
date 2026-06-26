@@ -1,11 +1,12 @@
 /**
  * News Fetching Service supporting multiple API providers.
  * Randomly balances traffic between NewsData.io and GNews APIs.
- * Automatically accumulates, deduplicates, and stores articles in a rolling cache window.
+ * Automatically accumulates, deduplicates, and stores articles in a rolling cache window and Supabase DB.
  */
 
 import cache from './cache.js';
 import { SAMPLE_ARTICLES } from '../data/sampleData.js';
+import { saveArticlesToDb, getArticlesFromDb } from './db.js';
 
 // API Configuration
 const NEWSDATA_KEY = 'pub_caa5dc1c03f44523a04554427c291a58';
@@ -53,6 +54,7 @@ async function fetchNewsDataArticles(query, page = null) {
     creator: item.creator || [],
     country: item.country || [],
     language: item.language || 'english',
+    source_api: 'newsdata',
   }));
 
   return {
@@ -98,6 +100,7 @@ async function fetchGNewsArticles(query, page = 1) {
     creator: [],
     country: ['india'],
     language: 'english',
+    source_api: 'gnews',
   }));
 
   return {
@@ -123,10 +126,25 @@ export async function fetchAllPunjabNews(options = {}) {
 
   // Retrieve previously cached raw articles to accumulate and prevent duplicates
   const rawArticlesCacheKey = 'raw_articles';
-  const previousArticles = cache.get(rawArticlesCacheKey) || [];
+  let previousArticles = cache.get(rawArticlesCacheKey);
+
+  // If cache is empty (e.g. server restarted), attempt to fetch from Supabase database
+  if (!previousArticles) {
+    console.log('[NewsService] Memory cache cold, retrieving news history from Supabase...');
+    try {
+      previousArticles = await getArticlesFromDb(150);
+    } catch (dbErr) {
+      console.error('[NewsService] Failed to load from database:', dbErr.message);
+    }
+  }
+
+  if (!previousArticles) {
+    previousArticles = [];
+  }
 
   const allArticles = [...previousArticles];
   const seenUrls = new Set(allArticles.map((a) => a.url));
+  const newArticles = [];
   let fetchCount = 0;
   let apiFailed = false;
 
@@ -150,6 +168,7 @@ export async function fetchAllPunjabNews(options = {}) {
           if (article.url && !seenUrls.has(article.url)) {
             seenUrls.add(article.url);
             allArticles.push(article);
+            newArticles.push(article);
           }
         }
 
@@ -179,6 +198,7 @@ export async function fetchAllPunjabNews(options = {}) {
           if (article.url && !seenUrls.has(article.url)) {
             seenUrls.add(article.url);
             allArticles.push(article);
+            newArticles.push(article);
           }
         }
 
@@ -210,6 +230,11 @@ export async function fetchAllPunjabNews(options = {}) {
   // Save raw articles to cache for accumulation in next fetches
   cache.set(rawArticlesCacheKey, prunedArticles, 7 * 24 * 60 * 60 * 1000); // 7 days TTL
 
+  // Save to Supabase Database to build historical archive (only newly fetched ones)
+  if (newArticles.length > 0) {
+    await saveArticlesToDb(newArticles);
+  }
+
   const result = {
     articles: prunedArticles,
     totalResults: prunedArticles.length,
@@ -227,7 +252,7 @@ export async function fetchAllPunjabNews(options = {}) {
 /**
  * Use sample data as fallback
  */
-function useSampleData(cacheKey) {
+async function useSampleData(cacheKey) {
   const result = {
     articles: SAMPLE_ARTICLES,
     totalResults: SAMPLE_ARTICLES.length,
@@ -237,6 +262,9 @@ function useSampleData(cacheKey) {
 
   cache.set(cacheKey, result, 30 * 60 * 1000);
   console.log(`[NewsService] Using ${SAMPLE_ARTICLES.length} sample articles`);
+  
+  // Save to database as well
+  await saveArticlesToDb(SAMPLE_ARTICLES);
   return result;
 }
 
