@@ -2,11 +2,18 @@
   "name": "punjab-news-feed",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "build": "npm install --prefix frontend && npm run build --prefix frontend",
     "dev": "concurrently --names backend,frontend --prefix-colors blue,green \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
     "dev:backend": "npm run dev --prefix backend",
     "dev:frontend": "npm run dev --prefix frontend"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.43.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0"
   },
   "devDependencies": {
     "concurrently": "^9.1.0"

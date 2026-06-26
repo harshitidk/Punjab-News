@@ -51,8 +51,8 @@ let feedGrid;
 async function init() {
   const app = $('#app');
 
-  // Clear the initial loader content but keep the loader itself
-  const loaderEl = $('#initialLoader');
+  // Clear any existing content to prevent duplication on retry
+  app.innerHTML = '';
 
   // Build the app shell
   renderHeader(app);
@@ -79,11 +79,7 @@ async function init() {
       fetchFilters().catch(() => null),
     ]);
 
-    // Hide initial loader
-    if (loaderEl) {
-      loaderEl.classList.add('hidden');
-      setTimeout(() => loaderEl.remove(), 500);
-    }
+
 
     // Process feed data
     handleFeedData(feedData);
@@ -101,11 +97,7 @@ async function init() {
   } catch (err) {
     console.error('[Init] Failed to load:', err);
 
-    // Hide loader
-    if (loaderEl) {
-      loaderEl.classList.add('hidden');
-      setTimeout(() => loaderEl.remove(), 500);
-    }
+
 
     removeSkeletonCards();
     renderErrorState(feedContainer, err.message, () => {
