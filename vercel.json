@@ -7,7 +7,7 @@
   "crons": [
     {
       "path": "/api/news/refresh",
-      "schedule": "*/30 * * * *"
+      "schedule": "0 0 * * *"
     }
   ]
 }
